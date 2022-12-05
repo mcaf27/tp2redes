@@ -1,6 +1,5 @@
-import socket
-import json
-import threading
+import socket, json, threading
+from sys import argv
 
 local_ip = '127.0.0.1'
 buffer_size = 1024
@@ -41,28 +40,35 @@ class Router:
 
   def bind(self):
     self.udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    self.udp.bind((local_ip, self.port))
+    print(self.ip_addr, self.port, self.id)
+    self.udp.bind((self.ip_addr, int(self.port)))
 
   def recv(self):
+    print(f'{self.id} vai receber mensagens')
     msg, addr = self.udp.recvfrom(buffer_size)
-    msg = json.loads(msg)
+    msg = msg.decode('utf-8')
     print(f'recebida por {self.id}:', msg)
     # atualiza tabela
 
-  def send(self, ip, port):
+  def send_msg(self, msg, ip, port):
+    msg = msg.encode('utf-8')
+    self.udp.sendto(msg, (ip, port))
+    # encaminhar de acordo com a tabela de rotas
+
+  def send_table(self, ip, port):
     msg = json.dumps(self.table.table).encode('ascii')
     self.udp.sendto(msg, (ip, port))
     print(f'enviando {self.id}:', self.table)
 
   def init_roteamento(self):
+    print(f'links de {self.id}', self.links)
     for link in self.links:
-      self.send(link.ip, link.port) #...
+      self.send_table(link.ip_addr, int(link.port)) #...
 
   def receber_mensagens(self, msg):
     id = msg[0]
 
     if id == 'C':
-      
       _, ip, porto, nome = msg.split(' ')
       r = Router(nome, porto, ip)
       self.links.append(r)
@@ -76,7 +82,7 @@ class Router:
       self.table.remove_entry(nome)
 
     elif id == 'I':
-      
+      print(f'{self.id} vai iniciar roteamente')
       t = threading.Timer(1, self.init_roteamento)
       t.start()
 
@@ -100,3 +106,18 @@ class Router:
       print()
 
       # encaminhar...
+
+def main():
+  name = argv[1]
+  port = argv[2]
+
+  router = Router(name, port, local_ip)
+  router.bind()
+  print(f'inicializado roteador {router.id} na porta {router.port}')
+
+  while True:
+    router.recv()
+
+if __name__ == '__main__':
+  while True:
+    main()
