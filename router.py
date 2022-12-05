@@ -13,7 +13,7 @@ class RouterTable:
     return f'{self.table}'
   
   def add_entry(self, dest, dist, next):
-    self.table += { 'dest': dest, 'dist': dist, 'next': next }
+    self.table += [{ 'dest': dest, 'dist': dist, 'next': next }]
 
   def remove_entry(self, nome):
     new_table = []
@@ -36,13 +36,8 @@ class Router:
       return self.id == obj.id
     return  self.id == obj
 
-  # def adicionar_enlace(self, router):
-  #   self.links.append(router)
-  #   self.table.add_entry(router.id, 1, router.id)
-
-  # def remover_enlace(self, router):
-  #   self.links.pop(router) # funciona?
-  #   self.table.remove_entry(router.id)
+  def __repr__(self):
+    return f'{self.id}:{self.ip_addr}/{self.port}'
 
   def bind(self):
     self.udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -61,7 +56,7 @@ class Router:
 
   def init_roteamento(self):
     for link in self.links:
-      self.send(link.ip, link.port)
+      self.send(link.ip, link.port) #...
 
   def receber_mensagens(self, msg):
     id = msg[0]
@@ -89,14 +84,14 @@ class Router:
 
       # mandar mensagens que sua distância é infinita
       
-      pass #?
+      pass
 
     elif id == 'T':
       
-      print(self.id)
-      for item in self.table:
-        print(item['dest'], item['dist'], item['next'])
-      print()
+      print('***', self.id, '***')
+      for item in self.table.table:
+        print('\t', item['dest'], item['dist'], item['next'])
+      print('---')
 
     elif id == 'E':
       
