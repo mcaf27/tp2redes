@@ -38,6 +38,28 @@ class Router:
   def __repr__(self):
     return f'{self.id}:{self.ip_addr}/{self.port}'
 
+  def get_router_index_from_table(self, router_name):
+    for index, item in enumerate(self.table.table):
+        if item['dest'] == router_name:
+            return index
+    return -1
+
+  def update_table(self, new_table, name_sender):
+    for item in new_table:
+        dest, dist = item.values()
+        index = self.get_router_index_from_table(dest)
+        route_in_table = self.table.table[index]
+        next = route_in_table.get('next')
+        
+        if index == -1:
+            self.table.table.append({ 'dest': dest, 'dist': dist + 1, 'next': next })
+        else:
+            if dist + 1 < route_in_table['dist']:
+                self.table.table[index] = { 'dest': dest, 'dist': dist + 1, 'next': next }
+            else:
+                if route_in_table['next'] == name_sender:
+                    self.table.table[index] = { 'dest': dest, 'dist': dist + 1, 'next': next }
+
   def bind(self):
     self.udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
     print(self.ip_addr, self.port, self.id)
@@ -45,19 +67,49 @@ class Router:
 
   def recv(self):
     print(f'{self.id} vai receber mensagens')
+
     msg, addr = self.udp.recvfrom(buffer_size)
     msg = msg.decode('utf-8')
-    print(f'recebida por {self.id}:', msg)
-    # atualiza tabela
+
+    print('msg recebida:', msg)
+    print()
+
+    msg = json.loads(msg)
+
+    command_number = msg.get('command_number')
+    name_sender = msg.get('name_sender')
+    routes = msg.get('routes')
+    message = msg.get('message')
+
+    if command_number == 11111:
+      print(f'deve atualizar tabela que foi recebida de {name_sender}')
+      self.update_table(routes, name_sender)
+      print('tabela dps de atualizar:', self.table)
+    
+    # mensagem de texto
+
+    else:
+      print(f'processando a mensagem {message}...')
+      self.receber_mensagens(message)
 
   def send_msg(self, msg, ip, port):
-    msg = msg.encode('utf-8')
+
+    short_int = '99999'
+
+    msg = (short_int + msg).encode('utf-8')
     self.udp.sendto(msg, (ip, port))
     # encaminhar de acordo com a tabela de rotas
 
   def send_table(self, ip, port):
-    msg = json.dumps(self.table.table).encode('ascii')
+
+    routes_to_announce = [{key : val for key, val in sub.items() if key != 'next'} for sub in self.table.table]
+
+    msg = { 'command_number': 11111, 'name_sender': self.id, 'num_routes': len(self.table.table), 'routes': routes_to_announce }
+
+    msg = json.dumps(msg).encode('utf-8')
+
     self.udp.sendto(msg, (ip, port))
+
     print(f'enviando {self.id}:', self.table)
 
   def init_roteamento(self):

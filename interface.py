@@ -1,26 +1,32 @@
-from router import Router
-import socket
+import socket, json
 
 interface_port = 7999
 
 local_ip = '127.0.0.1'
 
-conn = None
+udp = None
 
-def create_interface_connection():
-  global conn
-  conn = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-  conn.bind((local_ip, int(interface_port)))
+def create_interface_socket():
+  global udp
+  udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+  udp.bind((local_ip, int(interface_port)))
 
-def send_msg(msg, ip, port):
-  global conn
+def send_msg(num, msg, ip, port):
+  global udp
+
+  # atualizar o envio de mensagens aqui tb
+
+  msg = { 'command_number': num, 'message': msg }
+
+  msg = json.dumps(msg)
 
   msg = msg.encode('utf-8')
-  conn.sendto(msg, (ip, int(port)))
+
+  udp.sendto(msg, (ip, int(port)))
 
 def read_commands():
   while True:
-    global conn
+    global udp
     try:
       in_ = input()
       ip1, porto1, x = in_.split(' ')[:3]
@@ -33,28 +39,28 @@ def read_commands():
         if ip2 == 'x':
           ip2 = local_ip
 
-        send_msg(f'C {ip2} {porto2} {nome}', ip1, porto1)
+        send_msg(77777, f'C {ip2} {porto2} {nome}', ip1, porto1)
 
       elif x == 'D':
         ip2, porto2 = in_.split(' ')[3:]
         # tá correto assim no enunciado mesmo?
 
       elif x == 'I':
-        send_msg('I', ip1, porto1)
+        send_msg(33333, 'I', ip1, porto1)
 
       elif x == 'F':
-        send_msg('F', ip1, porto1)
+        send_msg(44444, 'F', ip1, porto1)
 
       elif x == 'T':
-        send_msg('T', ip1, porto1)
+        send_msg(55555, 'T', ip1, porto1)
 
       elif x == 'E':
         txt, dest = in_.split(' ')[3:]
-        send_msg(f'E {txt} {dest}', ip1, porto1)
+        send_msg(66666, f'E {txt} {dest}', ip1, porto1)
 
     except ValueError:
       print('comando inválido')
       continue
 
-create_interface_connection()
+create_interface_socket()
 read_commands()
