@@ -4,6 +4,16 @@ from sys import argv
 local_ip = '127.0.0.1'
 buffer_size = 1024
 
+def timer(init):
+
+  def f():
+    init()
+    timer(init)
+  
+  thread = threading.Timer(1, f)
+  thread.start()
+  return thread
+
 class RouterTable:
   def __init__(self, dest, dist, next):
     self.table = [{ 'dest': dest, 'dist': dist, 'next': next }]
@@ -66,13 +76,8 @@ class Router:
     self.udp.bind((self.ip_addr, int(self.port)))
 
   def recv(self):
-    print(f'{self.id} vai receber mensagens')
-
     msg, addr = self.udp.recvfrom(buffer_size)
     msg = msg.decode('utf-8')
-
-    print('msg recebida:', msg)
-    print()
 
     msg = json.loads(msg)
 
@@ -82,9 +87,7 @@ class Router:
     message = msg.get('message')
 
     if command_number == 11111:
-      print(f'deve atualizar tabela que foi recebida de {name_sender}')
       self.update_table(routes, name_sender)
-      print('tabela dps de atualizar:', self.table)
     
     # mensagem de texto
 
@@ -110,10 +113,8 @@ class Router:
 
     self.udp.sendto(msg, (ip, port))
 
-    print(f'enviando {self.id}:', self.table)
-
   def init_roteamento(self):
-    print(f'links de {self.id}', self.links)
+    print('iniciou roteamento')
     for link in self.links:
       self.send_table(link.ip_addr, int(link.port)) #...
 
@@ -134,9 +135,7 @@ class Router:
       self.table.remove_entry(nome)
 
     elif id == 'I':
-      print(f'{self.id} vai iniciar roteamente')
-      t = threading.Timer(1, self.init_roteamento)
-      t.start()
+      timer(self.init_roteamento)
 
     elif id == 'F':
 
