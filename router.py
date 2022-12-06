@@ -4,16 +4,6 @@ from sys import argv
 local_ip = '127.0.0.1'
 buffer_size = 1024
 
-def timer(init):
-
-  def f():
-    init()
-    timer(init)
-  
-  thread = threading.Timer(1, f)
-  thread.start()
-  return thread
-
 class RouterTable:
   def __init__(self, dest, dist, next):
     self.table = [{ 'dest': dest, 'dist': dist, 'next': next }]
@@ -39,6 +29,8 @@ class Router:
     self.table = RouterTable(id, 0, id)
     self.udp = None
     self.links = []
+    self.timer = None
+    self.stop = False
 
   def __eq__(self, obj):
     if isinstance(obj, Router):
@@ -47,6 +39,20 @@ class Router:
 
   def __repr__(self):
     return f'{self.id}:{self.ip_addr}/{self.port}'
+
+  def continue_(self):
+    return not self.stop
+
+  def timer_f(self):
+
+    def f():
+      if self.continue_():
+        self.init_roteamento()
+        self.timer_f()
+    
+    thread = threading.Timer(1, f)
+    thread.start()
+    return thread
 
   def get_router_index_from_table(self, router_name):
     for index, item in enumerate(self.table.table):
@@ -129,19 +135,20 @@ class Router:
 
     elif id == 'D':
       
+      # print('links antes:', self.links)
       _, nome = msg.split(' ')
       i = self.links(nome)
       self.links.pop(i)
       self.table.remove_entry(nome)
+      # print('links depois', self.links)
 
     elif id == 'I':
-      timer(self.init_roteamento)
+      self.stop = False
+      self.timer = self.timer_f()
 
     elif id == 'F':
 
-      # mandar mensagens que sua distância é infinita
-      
-      pass
+      self.stop = True
 
     elif id == 'T':
       
