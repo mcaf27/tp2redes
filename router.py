@@ -86,7 +86,7 @@ class Router:
 
   def bind(self):
     self.udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    print(self.ip_addr, self.port, self.id)
+    # print(self.ip_addr, self.port, self.id)
     self.udp.bind((self.ip_addr, int(self.port)))
 
   def recv(self):
