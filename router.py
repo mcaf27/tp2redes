@@ -21,6 +21,11 @@ class RouterTable:
         entry['dist'] = 16 #infinito
       new_table.append(entry)
 
+  def get_next_hop(self, dest):
+    for item in self.table:
+      if item['dest'] == dest:
+          return item['next']
+
 class Router:
   def __init__(self, id, port, ip=local_ip):
     self.id = id
@@ -82,8 +87,9 @@ class Router:
     self.udp.bind((self.ip_addr, int(self.port)))
 
   def recv(self):
-    msg, addr = self.udp.recvfrom(buffer_size)
-    msg = msg.decode('utf-8')
+    msg_, addr = self.udp.recvfrom(buffer_size)
+    
+    msg = msg_.decode('utf-8')
 
     msg = json.loads(msg)
 
@@ -95,19 +101,64 @@ class Router:
     if command_number == 11111:
       self.update_table(routes, name_sender)
     
-    # mensagem de texto
+    elif command_number == 99999:
+
+      destination = msg.get('name_destination')
+      text = msg.get('text')
+
+      if destination == self.id:
+        print(f'R {text} de {name_sender} para {destination}')
+        print()
+        # descartada
+      else: # destino != self
+        next_router_name = self.table.get_next_hop(destination)
+        link_to_forward = None
+
+        for link in self.links:
+          if link.id == next_router_name:
+            link_to_forward = link
+            break
+
+        if link_to_forward is None:
+          print(f'X {text} de {name_sender} para {destination}')
+          print()
+          # descartada
+        else: # destino está na tabela de vizinhos
+          self.send_msg(text, name_sender, destination)
+          print(f'E {text} de {name_sender} para {destination} através de {link_to_forward.id}')
 
     else:
-      print(f'processando a mensagem {message}...')
       self.receber_mensagens(message)
 
-  def send_msg(self, msg, ip, port):
+  def send_msg(self, txt, source, destination):
 
-    short_int = '99999'
+    if source is None:
+      source = self.id
 
-    msg = (short_int + msg).encode('utf-8')
-    self.udp.sendto(msg, (ip, port))
-    # encaminhar de acordo com a tabela de rotas
+    msg = { 'command_number': 99999, 'name_sender': source, 'name_destination': destination, 'text': txt }
+
+    # print('msg pra ser enviada', msg)
+
+    msg = json.dumps(msg).encode('utf-8')
+
+    next_router_name = self.table.get_next_hop(destination)
+    # print('nextrouter', next_router_name)
+    link_to_forward = None
+
+    for link in self.links:
+      if link.id == next_router_name:
+        link_to_forward = link
+        break
+
+    # print('link', link_to_forward)
+
+    if link_to_forward is None:
+      print(f'X {txt} de {source} para {destination}')
+      print()
+      # descartar
+    else:
+      print(f'E {txt} de {source} para {destination} através de {link_to_forward.id}')
+      self.udp.sendto(msg, (link_to_forward.ip_addr, int(link_to_forward.port)))
 
   def send_table(self, ip, port):
 
@@ -120,7 +171,7 @@ class Router:
     self.udp.sendto(msg, (ip, port))
 
   def init_roteamento(self):
-    print('iniciou roteamento')
+    # print('iniciou roteamento')
     for link in self.links:
       self.send_table(link.ip_addr, int(link.port)) #...
 
@@ -157,18 +208,18 @@ class Router:
 
     elif id == 'T':
       
-      print('***', self.id, '***')
+      print(self.id)
       for item in self.table.table:
-        print('\t', item['dest'], item['dist'], item['next'])
-      print('---')
+        print(item['dest'], item['dist'], item['next'])
+      print()
 
     elif id == 'E':
       
       _, txt, dest = msg.split(' ')
-      print('E', txt, 'de', self.id, 'para', dest)
-      print()
+      # print('txt', txt, 'dest', dest)
+      source = self.id
 
-      # encaminhar...
+      self.send_msg(txt, source, dest)
 
 def main():
   name = argv[1]
@@ -176,7 +227,7 @@ def main():
 
   router = Router(name, port, local_ip)
   router.bind()
-  print(f'inicializado roteador {router.id} na porta {router.port}')
+  # print(f'inicializado roteador {router.id} na porta {router.port}')
 
   while True:
     router.recv()

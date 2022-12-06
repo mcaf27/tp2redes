@@ -59,7 +59,6 @@ def read_commands():
         send_msg(66666, f'E {txt} {dest}', ip1, porto1)
 
     except ValueError:
-      print('comando inválido')
       continue
 
 create_interface_socket()
