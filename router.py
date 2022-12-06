@@ -1,4 +1,7 @@
-import socket, json, threading
+import socket
+import json
+import threading
+import time
 from sys import argv
 
 local_ip = '127.0.0.1'
@@ -171,7 +174,7 @@ class Router:
     self.udp.sendto(msg, (ip, port))
 
   def init_roteamento(self):
-    # print('iniciou roteamento')
+    # print('roteamento...')
     for link in self.links:
       self.send_table(link.ip_addr, int(link.port)) #...
 
@@ -220,6 +223,27 @@ class Router:
       source = self.id
 
       self.send_msg(txt, source, dest)
+
+    elif id == 'S':
+
+      _, seconds = msg.split(' ')
+      # print('dormir')
+      should_change_back = False
+      if self.stop == False:
+        should_change_back = True
+
+      if should_change_back:
+        self.stop = True
+
+      time.sleep(float(seconds))
+
+      if should_change_back:
+        self.stop = False
+        self.timer = self.timer_f()
+
+      # print('acordar')
+
+
 
 def main():
   name = argv[1]
