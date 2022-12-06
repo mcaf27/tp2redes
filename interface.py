@@ -14,8 +14,6 @@ def create_interface_socket():
 def send_msg(num, msg, ip, port):
   global udp
 
-  # atualizar o envio de mensagens aqui tb
-
   msg = { 'command_number': num, 'message': msg }
 
   msg = json.dumps(msg)
@@ -42,8 +40,10 @@ def read_commands():
         send_msg(77777, f'C {ip2} {porto2} {nome}', ip1, porto1)
 
       elif x == 'D':
-        ip2, porto2 = in_.split(' ')[3:]
-        # tá correto assim no enunciado mesmo?
+        name = in_.split(' ')[3:]
+        name = name[0]
+
+        send_msg(22222, f'D {name}', ip1, porto1)
 
       elif x == 'I':
         send_msg(33333, 'I', ip1, porto1)

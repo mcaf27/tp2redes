@@ -135,13 +135,18 @@ class Router:
 
     elif id == 'D':
       
-      # print('links antes:', self.links)
       _, nome = msg.split(' ')
-      i = self.links(nome)
-      self.links.pop(i)
-      self.table.remove_entry(nome)
-      # print('links depois', self.links)
 
+      to_delete = -1
+      for index, link in enumerate(self.links):
+        if link.id == nome:
+          to_delete = index
+          break
+
+      if to_delete != -1:
+        self.links.pop(to_delete)
+        self.table.remove_entry(nome)
+      
     elif id == 'I':
       self.stop = False
       self.timer = self.timer_f()
