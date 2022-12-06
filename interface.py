@@ -57,6 +57,12 @@ def read_commands():
       elif x == 'E':
         txt, dest = in_.split(' ')[3:]
         send_msg(66666, f'E {txt} {dest}', ip1, porto1)
+      
+      elif x == 'S':
+        time = in_.split(' ')[3:]
+        time = time[0]
+
+        send_msg(00000, f'S {time}', ip1, porto1)
 
     except ValueError:
       continue
